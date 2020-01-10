@@ -1,0 +1,38 @@
+### Hetzner Online GmbH installimage
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ external_interface }}:
+{% if dev_environment is defined %}
+      dhcp4: yes
+      dhcp6: no
+{% else %}
+      addresses:
+        - {{ public_ip }}/24
+        - {{ public_ip6 }}
+{% if additional_external_addresses is defined %}
+{% for address in additional_external_addresses %}
+        - {{ address }}
+{% endfor %}
+{% endif %}
+      routes:
+{% for route in default_routes %}
+        - {% for k, v in route.items() %} {{ k }}: {{ v }}
+          {%endfor%}
+
+{% endfor %}
+{% if additional_external_routes is defined %}
+{% for route in additional_external_routes %}
+        - {% for k, v in route.items() %} {{ k }}: {{ v }}
+          {%endfor%}
+
+{% endfor %}
+{% endif %}
+      gateway6: fe80::1
+      nameservers:
+        addresses:
+{% for nameserver in default_nameservers %}
+          - {{ nameserver }}
+{% endfor %}
+{% endif %}

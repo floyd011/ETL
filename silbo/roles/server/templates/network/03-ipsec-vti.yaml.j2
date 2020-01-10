@@ -1,0 +1,24 @@
+network:
+  version: 2
+  renderer: networkd
+  tunnels:
+{% for tunnel_name, tunnel in ipsec_interfaces.items() %}
+    {{ tunnel_name }}:
+      mode: {{ tunnel.mode }}
+      local: {{ tunnel.local }}
+      remote: {{ tunnel.remote }}
+      key: {{ tunnel.key }}
+{% if tunnel.addresses is defined %}
+      addresses:
+{% for address in tunnel.addresses %}
+        - {{ address }}
+{% endfor %}
+{% endif %}
+{% if tunnel.routes is defined %}
+      routes:
+{% for route in tunnel.routes %}
+        - {% for k, v in route.items() %} {{ k }}: {{ v }}
+          {%endfor%}table: 220
+{% endfor %}
+{% endif %}
+{% endfor %}

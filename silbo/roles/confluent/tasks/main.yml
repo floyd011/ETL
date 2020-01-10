@@ -1,0 +1,12 @@
+###################################################
+# Dispatch role commands
+###################################################
+- name: Pull images
+  include_tasks: pull_images.yml
+  tags: pull_images
+
+- name: Setup cluster
+  include_tasks: setup_cluster.yml
+  tags: setup_cluster
+
+

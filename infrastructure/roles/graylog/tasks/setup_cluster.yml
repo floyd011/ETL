@@ -1,0 +1,117 @@
+- block:
+               
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ mongo_data_folder }}"
+      - "{{ es_data_folder }}"
+      - "{{ graylog_journal_folder }}"
+      - "{{ graylog_tmp_folder }}"
+      - "{{ graylog_script_folder }}"
+      
+  - name: Change file ownership, group and permissions
+    file: name={{ item }} owner=smartivo group=smartivo mode='0777'
+    with_items:
+      - "{{ mongo_data_folder }}"
+      - "{{ es_data_folder }}"
+      - "{{ graylog_journal_folder }}"
+      - "{{ graylog_tmp_folder }}"
+      - "{{ graylog_script_folder }}"
+
+  - name: Copy configs
+    copy: src=templates/{{ item }} dest={{ graylog_tmp_folder }}/{{ item }}
+    with_items:
+      - graylog-plugin-slack-3.0.1.jar
+      - graylog.conf
+      - log4j2.xml
+
+  - name: Change  file permission
+    file:
+      path: "{{ item }}"
+      owner: 1100
+      group: 1100
+    with_items:
+      - "{{ graylog_journal_folder }}"
+      - "{{ graylog_tmp_folder }}"
+                                              
+  - name: Check graylog container running
+    shell: docker inspect {{ graylog_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop graylog container
+    shell: docker stop {{ graylog_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Check elasticsearch container running
+    shell: docker inspect {{ es_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop elasticsearch container
+    shell: docker stop {{ es_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+    
+  - name: Check mongo container running
+    shell: docker inspect {{ mongo_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop mongo container
+    shell: docker stop {{ mongo_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create mongo container
+    shell: docker run 
+      --rm 
+      --name={{ mongo_tag }} 
+      --detach=true
+      --network="host"
+      -v {{ mongo_data_folder }}:/data/db
+      "{{ acr_address }}/{{ mongo_graylog_image }}:{{ mongo_docker_tag }}"
+    register: result 
+
+  - name: Save mongo start script
+    copy: content={{ result.cmd }} dest={{ graylog_script_folder }}/start_{{ mongo_tag }}.sh mode=a+x 
+
+  - name: Create elasticsearch container
+    shell: docker run 
+      --rm 
+      --name={{ es_tag }} 
+      --detach=true
+      --network="host"
+      --ulimit memlock=-1:-1 
+      -e http.host="0.0.0.0" 
+      -e discovery.type="single-node" 
+      -e bootstrap.memory_lock="true" 
+      -e ES_JAVA_OPTS="-Xms{{ es_java_opts }} -Xmx{{ es_java_opts }}"
+      -v {{ es_data_folder }}:/usr/share/elasticsearch/data
+      "{{ acr_address }}/{{ es_graylog_image }}:{{ es_docker_tag }}"
+    register: result 
+
+  - name: Save elasticsearch start script
+    copy: content={{ result.cmd }} dest={{ graylog_script_folder }}/start_{{ es_tag }}.sh mode=a+x 
+
+  - name: Create graylog container
+    shell: docker run 
+      --rm 
+      --name={{ graylog_tag }} 
+      --detach=true
+      --network="host"
+      --add-host=mongo:{{ private_ip }}
+      -e GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:9000" 
+      -e GRAYLOG_HTTP_EXTERNAL_URI="http://127.0.0.1:9000/" 
+      -v {{ graylog_tmp_folder }}:/usr/share/graylog/data/config
+      -v {{ graylog_tmp_folder }}/graylog-plugin-slack-3.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-slack-3.0.1.jar
+      -v {{ graylog_journal_folder }}:/usr/share/graylog/data/journal
+      "{{ acr_address }}/{{ docker_graylog_image }}:{{ graylog_docker_tag }}"
+    register: result
+
+  - name: Save start script
+    copy: content={{ result.cmd }} dest={{ graylog_script_folder }}/start_{{ graylog_tag }}.sh mode=a+x 
+       
+  tags: always
+ 

@@ -1,0 +1,6 @@
+###################################################
+# Handlers for vanilla role
+###################################################
+
+- name: Reload ssh
+  service: name=ssh state=reloaded

@@ -1,0 +1,148 @@
+\set ECHO ALL
+\set ON_ERROR_STOP 1
+SET TIME ZONE 'UTC';
+DROP TABLE IF EXISTS metrics CASCADE;
+NOTICE:  table "metrics" does not exist, skipping
+CREATE TABLE metrics (sample prom_sample);
+CREATE INDEX metrics_time_idx ON metrics (prom_time(sample));
+CREATE INDEX metrics_labels_idx ON metrics USING GIN (prom_labels(sample));
+\d metrics
+      Table "public.metrics"
+ Column |    Type     | Modifiers 
+--------+-------------+-----------
+ sample | prom_sample | 
+Indexes:
+    "metrics_labels_idx" gin (prom_labels(sample))
+    "metrics_time_idx" btree (prom_time(sample))
+
+INSERT INTO metrics VALUES ('cpu_usage{service="nginx",host="machine1"} 34.6 1494595898000'),
+                           ('cpu_usage{service="nginx",host="machine2"} 10.3 1494595899000'),
+                           ('cpu_usage{service="nginx",host="machine1"} 30.2 1494595928000'),
+                           -- Test various corner-case values
+                           ('cpu_usage{service="nginx",host="machine1"} NaN 1494595928000'),
+                           ('cpu_usage{service="nginx",host="machine1"} +Inf 1494595928000'),
+                           ('cpu_usage{service="nginx",host="machine1"} -Inf 1494595928000'),
+                           -- Test with no labels
+                           ('cpu_usage 30.2 1494595928000');
+SELECT * FROM metrics;
+                               sample                               
+--------------------------------------------------------------------
+ cpu_usage{service="nginx",host="machine1"} 34.600000 1494595898000
+ cpu_usage{service="nginx",host="machine2"} 10.300000 1494595899000
+ cpu_usage{service="nginx",host="machine1"} 30.200000 1494595928000
+ cpu_usage{service="nginx",host="machine1"} nan 1494595928000
+ cpu_usage{service="nginx",host="machine1"} inf 1494595928000
+ cpu_usage{service="nginx",host="machine1"} -inf 1494595928000
+ cpu_usage 30.200000 1494595928000
+(7 rows)
+
+SELECT prom_time(sample), prom_value(sample), prom_labels(sample) FROM metrics;
+          prom_time           | prom_value |               prom_labels                
+------------------------------+------------+------------------------------------------
+ Fri May 12 13:31:38 2017 UTC |       34.6 | {"host": "machine1", "service": "nginx"}
+ Fri May 12 13:31:39 2017 UTC |       10.3 | {"host": "machine2", "service": "nginx"}
+ Fri May 12 13:32:08 2017 UTC |       30.2 | {"host": "machine1", "service": "nginx"}
+ Fri May 12 13:32:08 2017 UTC |        NaN | {"host": "machine1", "service": "nginx"}
+ Fri May 12 13:32:08 2017 UTC |   Infinity | {"host": "machine1", "service": "nginx"}
+ Fri May 12 13:32:08 2017 UTC |  -Infinity | {"host": "machine1", "service": "nginx"}
+ Fri May 12 13:32:08 2017 UTC |       30.2 | {}
+(7 rows)
+
+SELECT prom_time(sample), prom_value(sample) FROM metrics
+WHERE prom_time(sample) >  'Fri May 12 13:31:00 2017' AND
+      prom_name(sample) = 'cpu_usage' AND
+      prom_labels(sample) @> '{"service": "nginx", "host": "machine1"}';
+          prom_time           | prom_value 
+------------------------------+------------
+ Fri May 12 13:31:38 2017 UTC |       34.6
+ Fri May 12 13:32:08 2017 UTC |       30.2
+ Fri May 12 13:32:08 2017 UTC |        NaN
+ Fri May 12 13:32:08 2017 UTC |   Infinity
+ Fri May 12 13:32:08 2017 UTC |  -Infinity
+(5 rows)
+
+EXPLAIN SELECT prom_time(sample), prom_value(sample) FROM metrics
+WHERE prom_time(sample) >  'Fri May 12 13:31:00 2017' AND
+      prom_name(sample) = 'cpu_usage' AND
+      prom_labels(sample) @> '{"service": "nginx", "host": "machine1"}';
+                                                               QUERY PLAN                                                               
+----------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on metrics  (cost=24.01..28.04 rows=1 width=16)
+   Recheck Cond: (prom_labels(sample) @> '{"host": "machine1", "service": "nginx"}'::jsonb)
+   Filter: ((prom_time(sample) > 'Fri May 12 13:31:00 2017 UTC'::timestamp with time zone) AND (prom_name(sample) = 'cpu_usage'::text))
+   ->  Bitmap Index Scan on metrics_labels_idx  (cost=0.00..24.01 rows=1 width=0)
+         Index Cond: (prom_labels(sample) @> '{"host": "machine1", "service": "nginx"}'::jsonb)
+(5 rows)
+
+-- Insert sample with no timestamp
+INSERT INTO metrics VALUES ('cpu_usage{service="nginx",host="machine3"} 30.2');
+-- Cannot show time since different every test run
+SELECT prom_value(sample), prom_labels(sample) FROM metrics;
+ prom_value |               prom_labels                
+------------+------------------------------------------
+       34.6 | {"host": "machine1", "service": "nginx"}
+       10.3 | {"host": "machine2", "service": "nginx"}
+       30.2 | {"host": "machine1", "service": "nginx"}
+        NaN | {"host": "machine1", "service": "nginx"}
+   Infinity | {"host": "machine1", "service": "nginx"}
+  -Infinity | {"host": "machine1", "service": "nginx"}
+       30.2 | {}
+       30.2 | {"host": "machine3", "service": "nginx"}
+(8 rows)
+
+-- Cleanup
+DROP TABLE metrics CASCADE;
+--create table using functio and create the appropriate view
+SELECT create_prometheus_table('metrics', normalized_tables=>false);
+ create_prometheus_table 
+-------------------------
+ 
+(1 row)
+
+INSERT INTO metrics VALUES ('cpu_usage{service="nginx",host="machine1"} 34.6 1494595898000'),
+                           ('cpu_usage{service="nginx",host="machine2"} 10.3 1494595899000'),
+                           ('cpu_usage{service="nginx",host="machine1"} 30.2 1494595928000'),
+                           -- Test various corner-case values
+                           ('cpu_usage{service="nginx",host="machine1"} NaN 1494595928000'),
+                           ('cpu_usage{service="nginx",host="machine1"} +Inf 1494595928000'),
+                           ('cpu_usage{service="nginx",host="machine1"} -Inf 1494595928000'),
+                           -- Test with no labels
+                           ('cpu_usage 30.2 1494595928000');
+SELECT * FROM metrics;
+                               sample                               |             time             |   name    |   value   |                  labels                  
+--------------------------------------------------------------------+------------------------------+-----------+-----------+------------------------------------------
+ cpu_usage{service="nginx",host="machine1"} 34.600000 1494595898000 | Fri May 12 13:31:38 2017 UTC | cpu_usage |      34.6 | {"host": "machine1", "service": "nginx"}
+ cpu_usage{service="nginx",host="machine2"} 10.300000 1494595899000 | Fri May 12 13:31:39 2017 UTC | cpu_usage |      10.3 | {"host": "machine2", "service": "nginx"}
+ cpu_usage{service="nginx",host="machine1"} 30.200000 1494595928000 | Fri May 12 13:32:08 2017 UTC | cpu_usage |      30.2 | {"host": "machine1", "service": "nginx"}
+ cpu_usage{service="nginx",host="machine1"} nan 1494595928000       | Fri May 12 13:32:08 2017 UTC | cpu_usage |       NaN | {"host": "machine1", "service": "nginx"}
+ cpu_usage{service="nginx",host="machine1"} inf 1494595928000       | Fri May 12 13:32:08 2017 UTC | cpu_usage |  Infinity | {"host": "machine1", "service": "nginx"}
+ cpu_usage{service="nginx",host="machine1"} -inf 1494595928000      | Fri May 12 13:32:08 2017 UTC | cpu_usage | -Infinity | {"host": "machine1", "service": "nginx"}
+ cpu_usage 30.200000 1494595928000                                  | Fri May 12 13:32:08 2017 UTC | cpu_usage |      30.2 | {}
+(7 rows)
+
+SELECT * FROM metrics_samples;
+                               sample                               
+--------------------------------------------------------------------
+ cpu_usage{service="nginx",host="machine1"} 34.600000 1494595898000
+ cpu_usage{service="nginx",host="machine2"} 10.300000 1494595899000
+ cpu_usage{service="nginx",host="machine1"} 30.200000 1494595928000
+ cpu_usage{service="nginx",host="machine1"} nan 1494595928000
+ cpu_usage{service="nginx",host="machine1"} inf 1494595928000
+ cpu_usage{service="nginx",host="machine1"} -inf 1494595928000
+ cpu_usage 30.200000 1494595928000
+(7 rows)
+
+EXPLAIN (costs off, verbose on) SELECT * FROM metrics
+WHERE time >  'Fri May 12 13:31:00 2017' AND
+      name = 'cpu_usage' AND
+      labels @> '{"service": "nginx", "host": "machine1"}';
+                                                                                   QUERY PLAN                                                                                    
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on public.metrics_samples
+   Output: metrics_samples.sample, prom_time(metrics_samples.sample), prom_name(metrics_samples.sample), prom_value(metrics_samples.sample), prom_labels(metrics_samples.sample)
+   Recheck Cond: (prom_labels(metrics_samples.sample) @> '{"host": "machine1", "service": "nginx"}'::jsonb)
+   Filter: ((prom_time(metrics_samples.sample) > 'Fri May 12 13:31:00 2017 UTC'::timestamp with time zone) AND (prom_name(metrics_samples.sample) = 'cpu_usage'::text))
+   ->  Bitmap Index Scan on metrics_samples_labels_idx
+         Index Cond: (prom_labels(metrics_samples.sample) @> '{"host": "machine1", "service": "nginx"}'::jsonb)
+(6 rows)
+

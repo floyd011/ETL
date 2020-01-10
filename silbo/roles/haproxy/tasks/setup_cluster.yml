@@ -1,0 +1,39 @@
+- block:
+               
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ haproxy_tmp_folder }}"
+      - "{{ haproxy_script_folder }}"
+
+  - name: Copy configs
+    template: src=templates/{{ item }} dest={{ haproxy_tmp_folder }}/{{ item }}
+    with_items:
+      - haproxy.cfg
+                             
+  - name: Check server container running
+    shell: docker inspect {{ haproxy_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop server container
+    shell: docker stop {{ haproxy_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create haproxy container
+    shell: docker run 
+      --rm 
+      --name={{ haproxy_tag }} 
+      --detach=true
+      --network="host"
+      -v {{ haproxy_tmp_folder }}/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      "{{ docker_haproxy_image }}:{{ haproxy_docker_tag }}"
+      haproxy -f /usr/local/etc/haproxy/haproxy.cfg
+    register: result 
+
+  - name: Save start script
+    copy: content={{ result.cmd }} dest={{ haproxy_script_folder }}/start_{{ haproxy_tag }}.sh mode=a+x 
+      
+  tags: always
+ 

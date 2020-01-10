@@ -1,0 +1,15 @@
+# /etc/ipsec.conf - strongSwan IPsec configuration file
+
+config setup
+
+conn %default
+    mobike=no
+
+{% for tunnel_name, tunnel in ipsec_interfaces.items() %}
+conn {{ tunnel.strongswan_config.name }}
+{% for k, v in tunnel.strongswan_config.items() %}
+{% if k != "name" %}
+    {{ k }}={{ v }}
+{% endif %}
+{% endfor %}
+{% endfor %}

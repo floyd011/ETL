@@ -1,0 +1,8 @@
+#-------------------------------------------------------
+# graylog - Docker images
+#-------------------------------------------------------
+mongo_data_folder: "/containers/{{ mongo_tag }}/data"
+es_data_folder: "/containers/{{ es_tag }}/data"
+graylog_journal_folder: "/containers/{{ graylog_tag }}/journal"
+graylog_tmp_folder: "{{ volume_hdd }}/{{ graylog_tag }}/tmp/config"
+graylog_script_folder: "{{ volume_hdd }}/{{ graylog_tag }}/scripts"

@@ -1,0 +1,15 @@
+- block:
+  - name: Log into private registry
+    docker_login:
+      username: "{{ vault_acr_principal_id }}"
+      password: "{{ vault_acr_principal_pass }}"
+
+  - name: Push images
+    docker_image:
+      name: "{{ item }}"
+      push: yes
+      source: local
+    with_items:
+      - "{{ docker_gp_mne_image }}:{{ gp_docker_tag }}"
+
+  tags: always

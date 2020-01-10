@@ -1,0 +1,90 @@
+*nat
+# Default policy for nat is to accept, as it is not used that way
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+:DOCKER - [0:0]
+{% if iptables.nat is defined %}
+{% for chain_def in iptables.nat %}
+:{{ chain_def.subchain }} - [0:0]
+{% endfor %}
+{% endif %}
+
+{% if iptables.nat is defined %}
+{% for chain_def in iptables.nat %}
+-A {{ chain_def.chain }} -j {{ chain_def.subchain }}
+{% endfor %}
+{% for chain_def in iptables.nat %}
+    {%- for rule in chain_def.rules %}
+-A {{ chain_def.subchain }} {{ rule }}
+{% endfor %}
+{%- endfor %}
+{% endif %}
+#save rules
+COMMIT
+*filter
+# Default policy to drop 'everything' but our output to internet
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+:PROTECTION - [0:0]
+:IPSEC - [0:0]
+:INTERNAL_NETWORK - [0:0]
+:EXTERNAL_NETWORK - [0:0]
+:DOCKER - [0:0]
+:DOCKER-USER - [0:0]
+:DOCKER-INTERNAL - [0:0]
+:DOCKER-EXTERNAL - [0:0]
+{% if iptables.filter is defined %}
+{% for chain_def in iptables.filter %}
+:{{ chain_def.subchain }} - [0:0]
+{% endfor %}
+{% endif %}
+
+{% if iptables.filter is defined %}
+{% for chain_def in iptables.filter %}
+-A {{ chain_def.chain }} -j {{ chain_def.subchain }}
+{% endfor %}
+{% for chain_def in iptables.filter %}
+    {%- for rule in chain_def.rules %}
+-A {{ chain_def.subchain }} {{ rule }}
+{% endfor %}
+{%- endfor %}
+{% endif %}
+
+# Allow established connections (the responses to our outgoing traffic)
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# Allow local programs that use loopback (Unix sockets)
+-A INPUT -s 127.0.0.0/8 -d 127.0.0.0/8 -i lo -j ACCEPT
+
+# Jump to DOCKER-INTERNAL chain for rules for internal container communication
+-A DOCKER-USER -j DOCKER-INTERNAL
+
+# Jump to DOCKER-EXTERNAL chain for rules for external container visibility
+-A DOCKER-USER -j DOCKER-EXTERNAL
+
+# Allow established connections (the responses to our outgoing traffic, and continuation of incomming traffic)
+-A DOCKER-USER -i {{ external_interface }} -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# Drop other Docker traffic
+-A DOCKER-USER -i {{ external_interface }} -j DROP
+
+# Jump to PROTECTION chain, will contain specific firewall protection subshains
+-A INPUT -j PROTECTION
+
+# Jump to IPSEC chain, will contain specific ipsec subchains
+-A INPUT -j IPSEC
+
+# Jump to INTERNAL_NETWORK chain, will contain specific subchains
+-A INPUT -j INTERNAL_NETWORK
+
+# Jump to EXTERNAL_NETWORK chain, will filter eternal access
+-A INPUT -j EXTERNAL_NETWORK
+
+# Allow incoming SSH/SCP conections to this machine
+-A EXTERNAL_NETWORK -p tcp -m tcp --dport {{ sshd_port }} -m state --state NEW -j ACCEPT
+
+#save rules
+COMMIT

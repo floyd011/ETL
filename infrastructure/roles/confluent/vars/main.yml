@@ -1,0 +1,5 @@
+#-------------------------------------------------------
+# confluent - Docker images
+#-------------------------------------------------------
+confluent_tmp_folder: "{{ volume_hdd }}/{{ confluent_tag }}/tmp"
+confluent_script_folder: "{{ volume_hdd }}/{{ confluent_tag }}/scripts"

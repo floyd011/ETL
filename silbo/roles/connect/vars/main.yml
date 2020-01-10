@@ -1,0 +1,5 @@
+#-------------------------------------------------------
+# connect - Docker images
+#-------------------------------------------------------
+connect_tmp_folder: "{{ volume_hdd }}/{{ connect_tag }}/tmp"
+connect_script_folder: "{{ volume_hdd }}/{{ connect_tag }}/scripts"

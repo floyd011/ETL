@@ -1,0 +1,21 @@
+###################################################
+# Handlers for vanilla role
+###################################################
+
+- name: Reload ssh
+  service: name=ssh state=reloaded
+
+- name: Restart iptables
+  service: name=netfilter-persistent state=restarted
+
+- name: Restart Docker
+  service: name=docker state=restarted
+
+- name: Reload sysctl
+  shell: sysctl -p
+
+- name: Generate netplan
+  shell: netplan generate
+
+- name: Apply netplan
+  shell: netplan apply

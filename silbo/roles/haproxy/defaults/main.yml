@@ -1,0 +1,6 @@
+#-------------------------------------------------------
+# haproxy - Default parameters
+#-------------------------------------------------------
+haproxy_tag: haproxy
+haproxy_docker_tag: latest
+docker_haproxy_image: "{{ acr_address }}/haproxy"

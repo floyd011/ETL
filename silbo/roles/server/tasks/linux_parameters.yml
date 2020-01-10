@@ -1,0 +1,77 @@
+###################################################
+# Change linux parameters
+###################################################
+- block:
+  - name: Setup /etc/hosts file
+    lineinfile:
+      dest: '/etc/hosts'
+      create: yes
+      state: present
+      regexp: "^{{ item.private_ip }}.?"
+      line: "{{ item.private_ip }} {{ item.name }}"
+    loop: "{{ all_servers | default([]) | flatten(levels=1) }}"
+
+  # fs.file-max > maximal number of open files
+  # net.core.netdev_max_backlog > number of incoming connections backlog
+  # net.core.somaxconn > maximum amount of option memory buffers
+  - name: Raise kernel limit on file handles
+    lineinfile:
+      dest: /etc/sysctl.conf
+      state: present
+      regexp: "^{{ item.name }}.?="
+      line: "{{ item.name }} = {{ item.value }}"
+    loop:
+      - { name: fs.file-max,  value: 262140}
+      - { name: kernel.sched_autogroup_enabled,  value: 0}
+      - { name: kernel.sched_migration_cost_ns,  value: 5000000}
+      - { name: kernel.shmall,  value: "{{ linux_kernel_shmall }}" }
+      - { name: kernel.shmmax,  value: "{{ linux_kernel_shmmax }}" }
+      - { name: net.core.netdev_max_backlog,  value: 2500}
+      - { name: net.core.somaxconn,  value: 65535}
+      - { name: net.ipv4.ip_forward,  value: 1}
+      - { name: net.ipv4.ip_nonlocal_bind, value: 1}
+      - { name: vm.dirty_background_bytes,  value: "{{ linux_vm_dirty_background_bytes }}" }
+      - { name: vm.dirty_bytes,  value: "{{ linux_vm_dirty_bytes }}" }
+      - { name: vm.hugepages_treat_as_movable,  value: 0}
+      - { name: vm.hugetlb_shm_group,  value: 0}
+      - { name: vm.nr_hugepages,  value: "{{ linux_vm_nr_hugepages }}" }
+      - { name: vm.nr_overcommit_hugepages,  value: "{{ linux_vm_nr_overcommit_hugepages }}" }
+      - { name: vm.overcommit_memory,  value: "{{ linux_vm_overcommit_memory }}" }
+      - { name: vm.overcommit_ratio,  value: "{{ linux_vm_overcommit_ratio }}" }
+      - { name: vm.swappiness,  value: "{{ linux_vm_swappiness }}" }
+    notify: Reload sysctl
+
+  # NR_OPEN > maximal number of open files
+  - name: Set max limit of open files
+    lineinfile:
+      dest: /usr/include/linux/limits.h
+      state: present
+      regexp: 'NR_OPEN'
+      line: "#define NR_OPEN         65536"
+
+  - name: Set memlock limits
+    template:
+      src: "{{ role_path }}/templates/security/01-smartivo-limits.conf.j2"
+      dest: "/etc/udev/rules.d/01-smartivo-limits.conf"
+      owner: "root"
+      group: "root"
+      mode: 0644
+
+  - name: Queue read ahead kb
+    command: echo 4096 > /sys/block/{{ item }}/queue/read_ahead_kb
+    loop: "{{ rotational_drives | default([]) | flatten(levels=1) }}"
+
+  - name: Queue rotational
+    action: shell echo 0 > /sys/block/{{ item }}/queue/rotational
+    loop: "{{ rotational_drives | default([]) | flatten(levels=1) }}"
+
+  - name: Copy scheduler rules file
+    template:
+      src: "{{ role_path }}/templates/udev/60-ssd-scheduler.rules.j2"
+      dest: "/etc/udev/rules.d/60-ssd-scheduler.rules"
+      owner: "root"
+      group: "root"
+      mode: 0622
+    when: rotational_drives is defined
+
+  tags: always

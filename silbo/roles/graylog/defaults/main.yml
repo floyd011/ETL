@@ -1,0 +1,13 @@
+#-------------------------------------------------------
+# graylog - Default parameters
+#-------------------------------------------------------
+mongo_tag: mongo
+mongo_docker_tag: 3
+mongo_graylog_image: "{{ acr_address }}/mongo"
+es_tag: elasticsearch
+es_docker_tag: 6.7.0
+es_graylog_image: "{{ acr_address }}/elasticsearch"
+graylog_tag: graylog
+graylog_docker_tag: 3.0.1
+docker_graylog_image: "{{ acr_address }}/graylog"
+es_java_opts: 512m

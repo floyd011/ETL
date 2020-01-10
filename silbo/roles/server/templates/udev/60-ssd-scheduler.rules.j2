@@ -1,0 +1,3 @@
+{% for drive in rotational_drives %}
+ACTION=="add|change", KERNEL=="{{ drive }}", ATTR{queue/rotational}="0",ATTR{queue/read_ahead_kb}="4096"
+{% endfor %}

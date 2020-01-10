@@ -1,0 +1,47 @@
+###################################################
+# Setup a vanilla server
+###################################################
+- name: Fail if not a new release of Ubuntu
+  fail:
+    msg: "{{ ansible_distribution_version }} is not an acceptable version of Ubuntu for this role"
+  when: "ansible_distribution_version not in ['18.04',  'bionic']"
+
+- name: Check default password is defined
+  fail: msg="Deployment variable 'default_password' has to be defined"
+  when: default_password is undefined
+
+- name: Update ubuntu
+  apt:
+    update_cache: yes
+    force_apt_get: yes
+
+- name: Upgrade ubuntu
+  apt:
+    upgrade: full
+    force_apt_get: yes
+
+- name: Create user group
+  group: name={{ default_group }}
+
+- name: Create admin user
+  user: name={{ default_user }}
+        groups={{ default_group }}
+        password="{{ default_password | password_hash('sha512') }}"
+        home="/home/{{ default_user }}"
+        createhome=yes
+        shell="/bin/bash"
+
+- name: Add user to sudoers
+  lineinfile:
+    dest: /etc/sudoers
+    regexp: "^%{{ default_group }} ALL"
+    line: "%{{ default_group }} ALL=(ALL) ALL"
+    state: present
+
+- name: Set SSH daemon port
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^#? *Port "
+    line: "Port {{ sshd_port }}"
+    state: present
+  notify: Reload ssh

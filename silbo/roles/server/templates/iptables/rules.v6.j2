@@ -1,0 +1,14 @@
+*filter
+# Deny all ip6 traffic
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# allow all loopback traffic
+-A INPUT -i lo -j ACCEPT
+
+# Allow established connections (the responses to our outgoing traffic)
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+#save rules
+COMMIT

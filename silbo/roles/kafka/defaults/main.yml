@@ -1,0 +1,9 @@
+#-------------------------------------------------------
+# kafka - Default parameters
+#-------------------------------------------------------
+kafka_tag: kafka
+kafka_docker_tag: 2.3.0
+docker_kafka_image: "{{ acr_address }}/kafka"
+number_kafka_nodes: 3
+kafka_retention: 10
+kafka_port: 9092

@@ -1,0 +1,18 @@
+#-------------------------------------------------------
+# prometheus - Default parameters
+#-------------------------------------------------------
+pg_prometheus_tag: pg_prometheus
+pg_prometheus_docker_tag: latest
+pg_prometheus_image: "{{ acr_address }}/pg_prometheus"
+prometheus_postgresql_adapter_tag: prometheus_postgresql_adapter
+prometheus_postgresql_adapter_docker_tag: latest
+prometheus_postgresql_adapter_image: "{{ acr_address }}/prometheus-postgresql-adapter"
+prometheus_tag: prometheus
+prometheus_docker_tag: latest
+prometheus_image: "{{ acr_address }}/prometheus"
+kafka_lag_tag: kafka_lag
+kafka_lag_docker_tag: latest
+kafka_lag_image: "{{ acr_address }}/kafka-lag"
+pg_prometheus_port: 5433
+kafka_broker_list: 10.0.1.4:9092
+kafka_group_list: kafka2pg

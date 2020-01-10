@@ -1,0 +1,26 @@
+###################################################
+# Build images
+###################################################
+- block:
+  - name: Build openjdk image
+    docker_image:
+      build:
+        path: "{{ role_path }}/files/centos-openjdk-11"
+        pull: no
+      source: build
+      name: "{{ docker_openjdk }}:latest"
+      repository: "{{ acr_address }}/{{ docker_openjdk }}:latest"
+      force_source: yes
+
+  - name: Build zoo image
+    docker_image:
+      build:
+        path: "{{ role_path }}/files/zookeeper"
+        pull: no
+      source: build
+      name: "{{ docker_zoo_image }}:{{ zoo_docker_tag }}"
+      repository: "{{ acr_address }}/{{ docker_zoo_image }}:{{ zoo_docker_tag }}"
+      force_source: yes
+
+  tags:
+  - build

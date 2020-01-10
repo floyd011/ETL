@@ -1,0 +1,8 @@
+#-------------------------------------------------------
+# kafka - Docker images
+#-------------------------------------------------------
+kafka_data_folder: "/containers/{{ kafka_tag }}/data"
+kafka_config_folder: "/containers/{{ kafka_tag }}/config"
+kafka_logs_folder: "/containers/{{ kafka_tag }}/logs"
+kafka_tmp_folder: "{{ volume_hdd }}/{{ kafka_tag }}/tmp"
+kafka_script_folder: "{{ volume_hdd }}/{{ kafka_tag }}/scripts"

@@ -1,0 +1,13 @@
+linux_kernel_shmall: 262144  # 1 GB
+linux_kernel_shmmax: 2147483648  # 2 GB
+
+linux_vm_dirty_background_bytes: 67108864  # 64 MB
+linux_vm_dirty_bytes: 536870912  # 512 MB
+
+linux_vm_nr_hugepages: 1024  # 2GB
+linux_vm_nr_overcommit_hugepages: 256  # 512 MB
+
+linux_vm_overcommit_memory: 2  # don't overcommit too much
+linux_vm_overcommit_ratio: 97  # almost no overcommiting
+
+linux_vm_swappiness: 10  # minimal amount of swappin

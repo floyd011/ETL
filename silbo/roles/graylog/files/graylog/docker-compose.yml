@@ -1,0 +1,73 @@
+version: '2'
+services:
+  mongo:
+    image: mongo:latest
+    mem_limit: 1g
+    container_name: mongo
+    volumes:
+      - mongo_data:/data/db
+    restart: on-failure
+  elasticsearch:
+    image: elasticsearch:6.8.6
+    container_name: elasticsearch
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    environment:
+      - http.host=0.0.0.0
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 8g
+    restart: on-failure
+  graylog:
+    image: graylog:3.1.3
+    container_name: graylog
+    volumes:
+      - graylog_journal:/usr/share/graylog/data/journal
+      - ./graylog/config:/usr/share/graylog/data/config
+      - ./graylog/config/graylog-plugin-slack-3.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-slack-3.0.1.jar
+    environment:
+      - GRAYLOG_HTTP_BIND_ADDRESS=0.0.0.0:9000
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
+    links:
+      - mongo
+      - elasticsearch
+    restart: on-failure
+    ports:
+      # Graylog web interface and REST API
+      - 127.0.0.1:9000:9000
+      # Syslog TCP
+      - 127.0.0.1:514:514
+      # Syslog UDP
+      - 127.0.0.1:514:514/udp
+      # GELF TCP
+      - 127.0.0.1:12201:12201
+      # GELF UDP
+      - 127.0.0.1:12201:12201/udp
+      # BEAT 
+      - 127.0.0.1:5044:5044
+volumes:
+    mongo_data:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: /data/graylog/mongo
+    es_data:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: /data/graylog/elastic
+    graylog_journal:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: /data/graylog/journal
+

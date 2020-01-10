@@ -1,0 +1,8 @@
+path = /usr/local/greenplum-db-{{ gp_docker_tag }}
+display_name = Greenplum Database Production Cluster
+master_port = {{ gp_port }}
+webserver_port = {{ gpcc_port }}
+EnableHTTP = true      ; allow both HTTP and HTTPS
+EnableHTTPS = true
+ssl_cert_file = /etc/ssl/cert.pem
+enable_kerberos = false

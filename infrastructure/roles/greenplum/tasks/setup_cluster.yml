@@ -1,0 +1,81 @@
+- block:
+
+  - name: Check deployment_gp is defined
+    fail: msg="Deployment variable 'deployment_gp' has to be defined"
+    when: deployment_gp is undefined
+       
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ gp_data_folder }}"
+      - "{{ gp_tmp_folder }}"
+      - "{{ gp_script_folder }}"
+
+  - name: Change file ownership, group and permissions
+    file: name={{ item }} owner={{ user_owner }} group={{ user_owner }} mode='0777'
+    with_items:
+      - "{{ gp_data_folder }}"
+      - "{{ gp_tmp_folder }}"   
+         
+  - name: Copy configs
+    template: src=templates/{{ item }} dest={{ gp_tmp_folder }}/{{ item }}
+    with_items:
+      - docker-entrypoint.sh
+      - activatemasteronstandby.sh
+      - multihost
+      - listhost
+      - gpdata_dir.sh
+      - gpinitsys
+      - ccconf
+
+  - name: Changing perm of "/tmp/*.sh", adding "+x"
+    file: dest={{ gp_tmp_folder }}/{{ item }} mode=a+x      
+    with_items:
+      - docker-entrypoint.sh
+      - activatemasteronstandby.sh
+      - gpdata_dir.sh
+
+  - name: Get name node
+    set_fact:
+      node_name: "{% for host in gp_servers %} {% if private_ip == gp_servers[host]['nodeip'] %}{{ host }}{% endif %} {% endfor %}"
+
+  - name: Get role node
+    set_fact:
+      node_role: "{% for host in gp_servers %} {% if private_ip == gp_servers[host]['nodeip'] %}{{ gp_servers[host]['role'] }}{% endif %} {% endfor %}"
+
+  - name: Check server container running
+    shell: docker inspect {{ node_name }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop server container
+    shell: docker stop {{ node_name }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create greenplum container
+    shell: docker run 
+      --rm 
+      --name={{ node_name | replace(" ", "") }}
+      --hostname={{ node_name | replace(" ", "") }}
+      --detach=true
+      -e GP_NODE="{{ node_role | replace(" ", "") }}" 
+      {% for host in gp_servers %} --add-host={{ host }}:{{ gp_servers[host]['nodeip'] }}{% endfor %}
+      --network="host" 
+      -v {{ gp_tmp_folder }}/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh 
+      -v {{ gp_tmp_folder }}/activatemasteronstandby.sh:/usr/local/bin/activatemasteronstandby.sh 
+      -v {{ gp_tmp_folder }}/multihost:/var/lib/gpdb/setup/multihost 
+      -v {{ gp_tmp_folder }}/listhost:/var/lib/gpdb/setup/listhost 
+      -v {{ gp_tmp_folder }}/gpdata_dir.sh:/var/lib/gpdb/setup/gpdata_dir.sh 
+      -v {{ gp_tmp_folder }}/gpinitsys:/var/lib/gpdb/setup/gpinitsys 
+      -v {{ gp_tmp_folder }}/ccconf:/var/lib/gpdb/setup/ccconf 
+      -v {{ gp_data_folder }}:/var/lib/gpdb/data/ 
+      -v app:/usr/local/greenplum-db-{{ gp_docker_tag }} 
+      "{{ acr_address }}/{{ docker_gp_mne_image }}:{{ gp_docker_tag }}"
+      tail -f /dev/null
+    register: result 
+
+  - name: Save start script
+    copy: content={{ result.cmd }} dest={{ gp_script_folder }}/start_{{ node_name | replace(" ", "") }}.sh mode=a+x 
+      
+  tags: always

@@ -1,0 +1,13 @@
+### prometheus commands
+---
+- hosts: all
+  gather_facts: true
+  become: yes
+  become_method: sudo
+  roles:
+    - prometheus
+  tasks:
+    - name: Debug
+      debug: msg="{{ ansible_run_tags }}"
+      tags:
+        - always

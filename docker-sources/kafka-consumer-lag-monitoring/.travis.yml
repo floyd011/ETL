@@ -1,0 +1,24 @@
+language: java
+script: ./gradlew clean test shadowJar
+deploy:
+  - provider: releases
+    api_key: $GITHUB_KEY
+    file_glob: true
+    file: "build/libs/kafka-consumer-lag-monitoring-*.jar"
+    skip_cleanup: true
+    on:
+      tags: true
+
+  - provider: script
+    script: ./gradlew clean bintrayUpload -x test
+    skip_cleanup: true
+    on:
+      tags: true
+
+  - provider: script
+    script: ./gradlew jib
+    skip_cleanup: true
+    on:
+      tags: true
+after_success:
+- ./gradlew jacocoTestReport coveralls

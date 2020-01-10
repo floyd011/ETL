@@ -1,0 +1,13 @@
+### confluent commands
+---
+- hosts: all
+  gather_facts: true
+  become: yes
+  become_method: sudo
+  roles:
+    - confluent
+  tasks:
+    - name: Debug
+      debug: msg="{{ ansible_run_tags }}"
+      tags:
+        - always

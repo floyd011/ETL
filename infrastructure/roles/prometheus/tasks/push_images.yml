@@ -1,0 +1,40 @@
+- block:
+  - name: Log into private registry
+    docker_login:
+      registry: "{{ acr_address }}"
+      username: "{{ vault_acr_builder_principal_id }}"
+      password: "{{ vault_acr_builder_principal_pass }}"
+
+  - name: Push images pg_prometheus
+    docker_image:
+      name: "{{ item }}"
+      push: yes
+      source: local
+    with_items:
+      - "{{ acr_address }}/{{ pg_prometheus_image }}:{{ pg_prometheus_docker_tag }}"
+
+  - name: Push images prometheus_postgresql_adapter
+    docker_image:
+      name: "{{ item }}"
+      push: yes
+      source: local
+    with_items:
+      - "{{ acr_address }}/{{ prometheus_postgresql_adapter_image }}:{{ prometheus_postgresql_adapter_docker_tag }}"
+
+  - name: Push images prometheus
+    docker_image:
+      name: "{{ item }}"
+      push: yes
+      source: local
+    with_items:
+      - "{{ acr_address }}/{{ prometheus_image }}:{{ prometheus_docker_tag }}"
+
+  - name: Push images kafka_lag
+    docker_image:
+      name: "{{ item }}"
+      push: yes
+      source: local
+    with_items:
+      - "{{ acr_address }}/{{ kafka_lag_image }}:{{ kafka_lag_docker_tag }}"
+
+  tags: always

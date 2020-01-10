@@ -1,0 +1,51 @@
+- block:
+               
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ connect_tmp_folder }}"
+      - "{{ connect_script_folder }}"
+
+  - name: Copy configs
+    copy: src=templates/{{ item }} dest={{ connect_tmp_folder }}/{{ item }}
+    with_items:
+      - debezium-connector-postgres-0.9.5.Final-Smartivo.jar
+      - register-postgres.json
+      - register-postgres.sh
+
+  - name: Changing perm of "/tmp/*.sh", adding "+x"
+    file: dest={{ connect_tmp_folder }}/{{ item }} mode=a+x      
+    with_items:
+      - register-postgres.sh
+                        
+  - name: Check server container running
+    shell: docker inspect {{ connect_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop server container
+    shell: docker stop {{ connect_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create connect container
+    shell: docker run 
+      --rm 
+      --name={{ connect_tag }} 
+      --detach=true
+      --network="host"
+      -e BOOTSTRAP_SERVERS={{ private_ip }}:{{ bootstrap_servers_port }} 
+      -e REST_HOST_NAME=127.0.0.1
+      -e OFFSET_FLUSH_TIMEOUT_MS=300000 
+      -e CONFIG_STORAGE_TOPIC="my_connect_configs" 
+      -e OFFSET_STORAGE_TOPIC="my_connect_offsets" 
+      -e STATUS_STORAGE_TOPIC="my_connect_statuses" 
+      -v {{ connect_tmp_folder }}/debezium-connector-postgres-0.9.5.Final-Smartivo.jar:/kafka/connect/debezium-connector-postgres/debezium-connector-postgres-0.9.5.Final-Smartivo.jar
+      "{{ acr_address }}/{{ docker_connect_image }}:{{ connect_docker_tag }}"
+    register: result 
+
+  - name: Save start script
+    copy: content={{ result.cmd }} dest={{ connect_script_folder }}/start_{{ connect_tag }}.sh mode=a+x 
+      
+  tags: always
+ 

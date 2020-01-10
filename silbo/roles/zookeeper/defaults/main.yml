@@ -1,0 +1,7 @@
+#-------------------------------------------------------
+# zoo - Default parameters
+#-------------------------------------------------------
+zoo_tag: zookeeper
+zoo_docker_tag: 3.4.14
+docker_zoo_image: "{{ acr_address }}/zookeeper"
+number_zoo_nodes: 3

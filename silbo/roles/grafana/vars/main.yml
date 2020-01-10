@@ -1,0 +1,6 @@
+#-------------------------------------------------------
+# grafana - Docker images
+#-------------------------------------------------------
+grafana_data_folder: "/containers/{{ grafana_tag }}/data"
+grafana_tmp_folder: "{{ volume_hdd }}/{{ grafana_tag }}/tmp"
+grafana_script_folder: "{{ volume_hdd }}/{{ grafana_tag }}/scripts"

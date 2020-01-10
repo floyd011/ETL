@@ -1,0 +1,18 @@
+###################################################
+# Build images
+###################################################
+- block:
+  - name: Build Greenplum image
+    docker_image:
+      build:
+        path: "{{ role_path }}/files"
+        pull: yes
+      source: build
+      name: "{{ docker_gp_mne_image }}"
+      repository: "{{ docker_gp_mne_image }}:{{ gp_docker_tag }}"
+      force_source: yes
+    tags:
+      - greenplum
+
+  tags:
+  - build_all

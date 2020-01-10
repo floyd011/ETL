@@ -1,0 +1,61 @@
+- block:
+               
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ zoo_data_folder }}"
+      - "{{ zoo_conf_folder }}"
+      - "{{ zoo_logs_folder }}"
+      - "{{ zoo_tmp_folder }}"
+      - "{{ zoo_script_folder }}"
+
+  - name: Change file ownership, group and permissions
+    file: name={{ item }} owner={{ user_owner }} group={{ user_owner }} mode='0777'
+    with_items:
+      - "{{ zoo_data_folder }}"
+      - "{{ zoo_conf_folder }}"  
+      - "{{ zoo_logs_folder }}"
+
+  - name: Copy configs
+    template: src=templates/{{ item }} dest={{ zoo_tmp_folder }}/{{ item }}
+    with_items:
+      - zoo.cfg
+      
+  - name: Get zoo id
+    set_fact:
+      zoo_id: "{% for ip in zoo_nodes %} {% if ip == private_ip %}{{ loop.index }}{% endif %} {% endfor %}"
+
+  - name: Create zoo id
+    copy: content={{ zoo_id | replace(" ", "") }} dest={{ zoo_data_folder }}/myid
+
+
+                                      
+  - name: Check server container running
+    shell: docker inspect {{ zoo_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop server container
+    shell: docker stop {{ zoo_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create zoo container
+    shell: docker run 
+      --rm 
+      --name={{ zoo_tag }} 
+      --detach=true
+      --network="host"
+      -e ALLOW_ANONYMOUS_LOGIN="yes"
+      -v {{ zoo_tmp_folder }}/zoo.cfg:/zookeeper/conf/zoo.cfg
+      -v {{ zoo_logs_folder }}:/zookeeper/txns
+      -v {{ zoo_conf_folder }}:/zookeeper/conf 
+      -v {{ zoo_data_folder }}:/zookeeper/data 
+      "{{ docker_zoo_image }}:{{ zoo_docker_tag }}"
+    register: result 
+
+  - name: Save start script
+    copy: content={{ result.cmd }} dest={{ zoo_script_folder }}/start_{{ zoo_tag }}.sh mode=a+x 
+      
+  tags: always
+ 

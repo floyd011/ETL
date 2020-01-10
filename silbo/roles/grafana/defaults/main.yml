@@ -1,0 +1,6 @@
+#-------------------------------------------------------
+# grafana - Default parameters
+#-------------------------------------------------------
+grafana_tag: grafana
+grafana_docker_tag: latest
+docker_grafana_image: "{{ acr_address }}/grafana"

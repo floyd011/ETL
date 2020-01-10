@@ -1,0 +1,7 @@
+#-------------------------------------------------------
+# connect - Default parameters
+#-------------------------------------------------------
+connect_tag: connect
+connect_docker_tag: latest
+docker_connect_image: "{{ acr_address }}/connect-jdbc"
+bootstrap_servers_port: 9092

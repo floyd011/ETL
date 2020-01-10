@@ -1,0 +1,46 @@
+- block:
+  - name: Add Docker key
+    apt_key:
+      keyserver: https://download.docker.com/linux/ubuntu/gpg
+      id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+      state: present
+
+  - name: Add Docker repository
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+      state: present
+
+  - name: Install Docker
+    apt:
+      name: docker-ce
+      update_cache: yes
+      state: present
+
+  - name: Log into private registry
+    docker_login:
+      username: "{{ vault_acr_principal_id }}"
+      password: "{{ vault_acr_principal_pass }}"
+
+
+  - name: Pull images mongo
+    docker_image:
+      name: "{{ item }}"
+      source: pull
+    with_items:
+      - "{{ mongo_graylog_image }}:{{ mongo_docker_tag }}"
+
+  - name: Pull images elasticsearch
+    docker_image:
+      name: "{{ item }}"
+      source: pull
+    with_items:
+      - "{{ es_graylog_image }}:{{ es_docker_tag }}"
+
+  - name: Pull images graylog
+    docker_image:
+      name: "{{ item }}"
+      source: pull
+    with_items:
+      - "{{ docker_graylog_image }}:{{ graylog_docker_tag }}"
+
+  tags: always

@@ -1,0 +1,7 @@
+#-------------------------------------------------------
+# consul - Docker images
+#-------------------------------------------------------
+consul_data_folder: "/containers/{{ consul_tag }}/data"
+consul_conf_folder: "/containers/{{ consul_tag }}/conf"
+consul_tmp_folder: "{{ volume_hdd }}/{{ consul_tag }}/tmp"
+consul_script_folder: "{{ volume_hdd }}/{{ consul_tag }}/scripts"

@@ -1,0 +1,17 @@
+{
+    "name": "smartivo-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "database.hostname": "127.0.0.1",
+        "database.port": "5432",
+        "database.user": "smartivodb",
+        "database.password": "password",
+        "database.dbname" : "smartivodb",
+        "database.server.name": "smartivodb",
+        "schema.whitelist": "public",
+        "snapshot.mode": "never",
+        "decimal.handling.mode": "string"
+    }
+}
+

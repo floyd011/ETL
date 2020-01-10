@@ -1,0 +1,13 @@
+### Setup vanilla server
+---
+- hosts: servers_vanilla
+  gather_facts: true
+  become: yes
+  become_method: sudo
+  roles:
+    - vanilla
+  tasks:
+    - name: Debug
+      debug: msg="{{ ansible_run_tags }}"
+      tags:
+        - always

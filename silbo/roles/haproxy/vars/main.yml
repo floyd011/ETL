@@ -1,0 +1,5 @@
+#-------------------------------------------------------
+# haproxy - Docker images
+#-------------------------------------------------------
+haproxy_tmp_folder: "{{ volume_hdd }}/{{ haproxy_tag }}/tmp"
+haproxy_script_folder: "{{ volume_hdd }}/{{ haproxy_tag }}/scripts"

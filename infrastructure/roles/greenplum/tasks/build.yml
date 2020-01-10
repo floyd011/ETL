@@ -1,0 +1,21 @@
+###################################################
+# Build images
+###################################################
+- block:
+  - name: change work directory Greenplum installation files
+    command: chdir="{{ role_path }}/files" sh buildall.sh {{ gp_docker_tag }}
+    
+  - name: Build Greenplum image
+    docker_image:
+      build:
+        path: "{{ role_path }}/files"
+        pull: no     
+        args: 
+          VER: "{{ gp_docker_tag }}"             
+      source: build
+      name: "{{ docker_gp_mne_image }}:{{ gp_docker_tag }}"
+      repository: "{{ acr_address }}/{{ docker_gp_mne_image }}:{{ gp_docker_tag }}"
+      force_source: yes
+
+  tags:
+  - build

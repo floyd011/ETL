@@ -1,0 +1,7 @@
+gp_db_master
+{% if gp_workers is defined %}
+{% for worker in gp_workers %}
+{{ worker }}
+{% endfor %}
+{% endif %}
+gp_db_standby

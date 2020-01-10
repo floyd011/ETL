@@ -1,0 +1,8 @@
+#-------------------------------------------------------
+# Consul - Default parameters
+#-------------------------------------------------------
+consul_tag: consul
+consul_docker_tag: latest
+docker_consul_image: "{{ acr_address }}/consul"
+number_consul_nodes: 3
+

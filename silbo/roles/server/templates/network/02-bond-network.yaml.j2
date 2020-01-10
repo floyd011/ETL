@@ -1,0 +1,27 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+{% for interface in internal_interfaces %}
+    {{ interface }}:
+      dhcp4: no
+      dhcp6: no
+{% endfor %}
+  bonds:
+    {{ bond_interface }}:
+      addresses:
+        - {{ internal_address }}/{{ internal_mask }}
+{% if additional_internal_addresses is defined %}
+{% for address in additional_internal_addresses %}
+        - {{ address }}
+{% endfor %}
+{% endif %}
+      interfaces:
+{% for interface in internal_interfaces %}
+        - {{ interface }}
+{% endfor %}
+      parameters:
+        mode: balance-rr
+        mii-monitor-interval: 100
+        down-delay: 200
+        up-delay: 200

@@ -1,0 +1,13 @@
+###################################################
+# Setup server dispatch
+###################################################
+- name: Post vanilla steps
+  include_tasks: post_vanilla.yml
+  tags: post_vanilla
+
+- name: Setup linux parameters
+  include_tasks: linux_parameters.yml
+  tags:
+    - post_vanilla
+    - linux_parameters
+

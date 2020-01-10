@@ -1,0 +1,176 @@
+- block:
+               
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ pg_prometheus_data_folder }}"
+      - "{{ prometheus_data_folder }}"
+      - "{{ prometheus_tmp_folder }}"
+      - "{{ pg_prometheus_tmp_folder }}"
+      - "{{ pg_prometheus_script_folder }}"
+      - "{{ prometheus_script_folder }}"
+      - "{{ prometheus_postgresql_adapter_script_folder }}"
+      - "{{ kafka_lag_script_folder }}"
+            
+  - name: Change file ownership, group and permissions
+    file: name={{ item }} owner=smartivo group=smartivo mode='0777'
+    with_items:
+      - "{{ pg_prometheus_data_folder }}"
+      - "{{ prometheus_data_folder }}"
+      - "{{ pg_prometheus_tmp_folder }}"
+      - "{{ prometheus_tmp_folder }}"
+      - "{{ pg_prometheus_script_folder }}"
+      - "{{ prometheus_script_folder }}"
+      - "{{ prometheus_postgresql_adapter_script_folder }}"
+      - "{{ kafka_lag_script_folder }}"
+
+  - name: Copy configs
+    copy: src=templates/{{ prometheus_tag }}/{{ item }} dest={{ prometheus_tmp_folder }}/{{ item }}
+    with_items:
+      - prometheus.yml
+                                              
+  - name: Check pg_prometheus container running
+    shell: docker inspect {{ pg_prometheus_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop pg_prometheus container
+    shell: docker stop {{ pg_prometheus_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Check prometheus container running
+    shell: docker inspect {{ prometheus_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop prometheus container
+    shell: docker stop {{ prometheus_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+    
+  - name: Check prometheus_postgresql_adapter container running
+    shell: docker inspect {{ prometheus_postgresql_adapter_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop prometheus_postgresql_adapter container
+    shell: docker stop {{ prometheus_postgresql_adapter_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Check kafka_lag container running
+    shell: docker inspect {{ kafka_lag_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop kafka_lag container
+    shell: docker stop {{ kafka_lag_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create pg_prometheus container
+    shell: docker run 
+      --rm 
+      --name={{ pg_prometheus_tag }} 
+      --detach=true
+      --network="host"
+      --log-opt max-size=50m
+      -e POSTGRES_PASSWORD=postgres
+      -e POSTGRES_USER=postgres
+      -v {{ pg_prometheus_data_folder }}:/var/lib/postgresql/data
+      "{{ acr_address }}/{{ pg_prometheus_image }}:{{ pg_prometheus_docker_tag }}"
+      postgres -c synchronous_commit=off
+    register: result 
+
+  - name: Save pg_prometheus start script
+    copy: content={{ result.cmd }} dest={{ pg_prometheus_script_folder }}/start_{{ pg_prometheus_tag }}.sh mode=a+x 
+
+  - name: Wait for port 5432 to become open on the host, don't start checking for 10 seconds
+    wait_for:
+      port: 5432
+      delay: 10
+    
+  - name: Check pg_prometheus container running
+    shell: docker inspect {{ pg_prometheus_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop pg_prometheus container
+    shell: docker stop {{ pg_prometheus_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Copy configs
+    template: src=templates/{{ pg_prometheus_tag }}/{{ item }} dest={{ pg_prometheus_data_folder }}/{{ item }}
+    with_items:
+      - postgresql.conf
+
+  - name: Create pg_prometheus container
+    shell: docker run 
+      --rm 
+      --name={{ pg_prometheus_tag }} 
+      --detach=true
+      --network="host"
+      --log-opt max-size=50m
+      -e POSTGRES_PASSWORD=postgres
+      -e POSTGRES_USER=postgres
+      -v {{ pg_prometheus_data_folder }}:/var/lib/postgresql/data
+      "{{ acr_address }}/{{ pg_prometheus_image }}:{{ pg_prometheus_docker_tag }}"
+      postgres -c synchronous_commit=off
+    register: result 
+
+  - name: Create prometheus_postgresql_adapter container
+    shell: docker run 
+      --rm 
+      --name={{ prometheus_postgresql_adapter_tag }} 
+      --detach=true
+      --network="host"
+      --log-opt max-size=50m 
+      --add-host=pg_prometheus:{{ private_ip }}
+      -e TS_PROM_PG_PASSWORD=postgres
+      "{{ acr_address }}/{{ prometheus_postgresql_adapter_image }}:{{ prometheus_postgresql_adapter_docker_tag }}"
+      -pg.host=127.0.0.1 -pg.port={{ pg_prometheus_port }} -pg.password=postgres -pg.prometheus-log-samples
+    register: result 
+
+  - name: Save prometheus_postgresql_adapter start script
+    copy: content={{ result.cmd }} dest={{ prometheus_postgresql_adapter_script_folder }}/start_{{ prometheus_postgresql_adapter_tag }}.sh mode=a+x 
+
+  - name: Create prometheus container
+    shell: docker run 
+      --rm 
+      --name={{ prometheus_tag }} 
+      --detach=true
+      --network="host"
+      --add-host=pg_prometheus:{{ private_ip }}
+      --add-host=prometheus_postgresql_adapter:{{ private_ip }}
+      --add-host=kafka-lag:{{ private_ip }}
+      -v {{ prometheus_tmp_folder }}/prometheus.yml:/etc/prometheus/prometheus.yml
+      -v {{ prometheus_data_folder }}:/prometheus
+      "{{ acr_address }}/{{ prometheus_image }}:{{ prometheus_docker_tag }}"
+      --config.file=/etc/prometheus/prometheus.yml 
+      --storage.tsdb.path=/prometheus
+      --web.console.libraries=/usr/share/prometheus/console_libraries
+      --web.console.templates=/usr/share/prometheus/consoles
+    register: result
+
+  - name: Save prometheus start script
+    copy: content={{ result.cmd }} dest={{ prometheus_script_folder }}/start_{{ prometheus_tag }}.sh mode=a+x 
+
+  - name: Create kafka_lag container
+    shell: docker run 
+      --rm 
+      --name={{ kafka_lag_tag }} 
+      --detach=true
+      --network="host"
+      -e KAFKA_SERVER="{{ kafka_broker_list }}"
+      -e KAFKA_GROUP="{{ kafka_group_list }}" 
+      -p 9999:9999     
+      "{{ acr_address }}/{{ kafka_lag_image }}:{{ kafka_lag_docker_tag }}"
+    register: result
+
+  - name: Save kafka_lag start script
+    copy: content={{ result.cmd }} dest={{ kafka_lag_script_folder }}/start_{{ kafka_lag_tag }}.sh mode=a+x 
+        
+  tags: always
+ 

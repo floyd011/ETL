@@ -1,0 +1,47 @@
+- block:
+               
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ confluent_tmp_folder }}"
+      - "{{ confluent_script_folder }}"
+
+  - name: Copy configs
+    copy: src=templates/{{ item }} dest={{ confluent_tmp_folder }}/{{ item }}
+    with_items:
+      - bulk.py
+      - docker-compose.yml
+      - simpleloop.py
+      - simplestaging.py
+                             
+  - name: Check server container running
+    shell: docker inspect {{ confluent_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop server container
+    shell: docker stop {{ confluent_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create confluent container
+    shell: docker run 
+      --rm 
+      --name={{ confluent_tag }} 
+      --detach=true
+      --network="host"
+      -e CONSUL_SERVER={{ consul_server_proxy_ip }}
+      -e CONSUL_PORT={{ consul_port }}
+      -e DBSOURCE="{{ dbsource }}"
+      -v {{ confluent_tmp_folder }}/bulk.py:/app/index.py
+      --log-driver=gelf 
+      --log-opt gelf-address=udp://{{ graylog_ip }}:12201
+      --log-opt tag="confluent-logs"
+      "{{ acr_address }}/{{ docker_confluent_image }}:{{ confluent_docker_tag }}"
+    register: result 
+
+  - name: Save start script
+    copy: content={{ result.cmd }} dest={{ confluent_script_folder }}/start_{{ confluent_tag }}.sh mode=a+x 
+      
+  tags: always
+ 

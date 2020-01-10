@@ -1,0 +1,16 @@
+###################################################
+# Build images
+###################################################
+- block:
+  - name: Build confluent image
+    docker_image:
+      build:
+        path: "{{ role_path }}/files"
+        pull: no
+      source: build
+      name: "{{ docker_confluent_image }}:{{ confluent_docker_tag }}"
+      repository: "{{ acr_address }}/{{ docker_confluent_image }}:{{ confluent_docker_tag }}"
+      force_source: yes
+            
+  tags:
+  - build

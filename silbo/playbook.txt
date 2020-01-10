@@ -1,0 +1,19 @@
+ansible-playbook --inventory inventories/normal --limit backend_vanilla setup_vanilla_server.yml --ask-become-pass
+ansible-playbook --inventory inventories/normal --limit app_vanilla setup_vanilla_server.yml --ask-become-pass
+
+ansible-playbook --inventory inventories/normal --limit backend setup_server.yml 
+ansible-playbook --inventory inventories/normal --limit app setup_server.yml 
+
+ansible-playbook --inventory inventories/normal --limit backend consul.yml 
+ansible-playbook --inventory inventories/normal --limit backend  zookeeper.yml 
+ansible-playbook --inventory inventories/normal --limit backend  kafka.yml 
+ansible-playbook --inventory inventories/normal --limit backend --tags "pull_images"  gp.yml 
+ansible-playbook --inventory inventories/normal --limit server3  --tags "setup_cluster" gp.yml 
+ansible-playbook --inventory inventories/normal --limit server2  --tags "setup_cluster" gp.yml 
+ansible-playbook --inventory inventories/normal --limit server1  --tags "setup_cluster" gp.yml 
+ansible-playbook --inventory inventories/normal --limit app  graylog.yml 
+ansible-playbook --inventory inventories/normal --limit app  connect.yml 
+ansible-playbook --inventory inventories/normal --limit app  confluent.yml 
+ansible-playbook --inventory inventories/normal --limit app  grafana.yml 
+ansible-playbook --inventory inventories/normal --limit app  prometheus.yml 
+ansible-playbook --inventory inventories/normal --limit app  haproxy.yml

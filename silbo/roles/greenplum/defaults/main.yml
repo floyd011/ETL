@@ -1,0 +1,10 @@
+#-------------------------------------------------------
+# Greenplum - Default parameters
+#-------------------------------------------------------
+gp_docker_tag: 6.1.0
+docker_gp_mne_image: "{{ acr_address }}/greenplum-mne"
+gp_opt_cpu: 2
+gp_opt_work_mem: 4MB
+gp_password: gpadmin
+gpcc_password: password
+deployment_gp: greenplum

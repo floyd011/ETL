@@ -1,0 +1,26 @@
+###################################################
+# Build images
+###################################################
+- block:
+  - name: Build connect-base image
+    docker_image:
+      build:
+        path: "{{ role_path }}/files/connect-base"
+        pull: no
+      source: build
+      name: "{{ docker_connect_base_image }}:{{ connect_base_docker_tag }}"
+      repository: "{{ acr_address }}/{{ docker_connect_base_image }}:{{ connect_base_docker_tag }}"
+      force_source: yes
+      
+  - name: Build connect image
+    docker_image:
+      build:
+        path: "{{ role_path }}/files/connect"
+        pull: no
+      source: build
+      name: "{{ docker_connect_image }}:{{ connect_docker_tag }}"
+      repository: "{{ acr_address }}/{{ docker_connect_image }}:{{ connect_docker_tag }}"
+      force_source: yes
+      
+  tags:
+  - build

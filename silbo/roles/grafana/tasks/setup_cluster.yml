@@ -1,0 +1,36 @@
+- block:
+               
+  - name: Check data folders exist
+    file: name={{ item }} state=directory
+    with_items:
+      - "{{ grafana_tmp_folder }}"
+      - "{{ grafana_data_folder }}"
+      - "{{ grafana_script_folder }}"
+                            
+  - name: Check server container running
+    shell: docker inspect {{ grafana_tag }} | grep Running
+    register: server_running
+    ignore_errors: True
+
+  - name: Stop server container
+    shell: docker stop {{ grafana_tag }}
+    ignore_errors: True
+    when: "'true' in server_running.stdout"
+
+  - name: Create grafana container
+    shell: docker run 
+      --rm 
+      --name={{ grafana_tag }} 
+      --detach=true
+      --network="host"
+      --user=root
+      -e GF_SECURITY_ADMIN_PASSWORD=pass
+      -v {{ grafana_data_folder }}:/var/lib/grafana
+      "{{ docker_grafana_image }}:{{ grafana_docker_tag }}"
+    register: result 
+
+  - name: Save start script
+    copy: content={{ result.cmd }} dest={{ grafana_script_folder }}/start_{{ grafana_tag }}.sh mode=a+x 
+      
+  tags: always
+ 

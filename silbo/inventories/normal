@@ -1,0 +1,27 @@
+[servers]
+server1 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+server2 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+server3 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+server4 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+
+[backend]
+server1 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+server2 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+server3 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+
+[app]
+server4 ansible_ssh_host={{private_ip}} ansible_ssh_user={{user_owner}} ansible_ssh_port={{sshd_port}} ansible_python_interpreter="/usr/bin/env python3"
+
+[servers_vanilla]
+server_vanilla1 ansible_ssh_host={{private_ip}} ansible_ssh_user=silbo ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"
+server_vanilla3 ansible_ssh_host={{private_ip}} ansible_ssh_user=silbo ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"
+server_vanilla2 ansible_ssh_host={{private_ip}} ansible_ssh_user=silbo ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"
+server_vanilla4 ansible_ssh_host={{private_ip}} ansible_ssh_user=root  ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"
+
+[backend_vanilla]
+server_vanilla1 ansible_ssh_host={{private_ip}} ansible_ssh_user=silbo ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"
+server_vanilla3 ansible_ssh_host={{private_ip}} ansible_ssh_user=silbo ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"
+server_vanilla2 ansible_ssh_host={{private_ip}} ansible_ssh_user=silbo ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"
+
+[app_vanilla]
+server_vanilla4 ansible_ssh_host={{private_ip}} ansible_ssh_user=root  ansible_ssh_port=22 ansible_python_interpreter="/usr/bin/env python3"

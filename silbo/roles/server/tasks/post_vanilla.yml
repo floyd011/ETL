@@ -1,0 +1,68 @@
+###################################################
+# Setup commands post vanilla
+###################################################
+- block:
+  - name: Install basic packages
+    apt:
+      pkg:
+      - ntp
+      - htop
+      - atop
+      - lynx
+      - screen
+      - tmux
+      - python3-pip
+      - python3-passlib
+      - iptraf
+      - smartmontools
+      - ifenslave-2.6
+      - mc
+      - libxml2-utils
+      - wget
+      - iptables-persistent
+      - vim
+      - strongswan
+      - alpine
+      force_apt_get: yes
+
+  - name: Add Docker key
+    apt_key:
+      keyserver: https://download.docker.com/linux/ubuntu/gpg
+      id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+      state: present
+
+  - name: Add Docker repository
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+      state: present
+
+  - name: Install Docker
+    apt:
+      name: docker-ce
+      update_cache: yes
+      state: present
+      force_apt_get: yes
+
+  - name: Disable Docker userland proxy
+    copy:
+      src: "{{ role_path }}/files/docker/daemon.json"
+      dest: "/etc/docker/daemon.json"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Add docker support for Ansible/Python
+    pip:
+      name: docker
+      state: latest
+
+  - name: Locale gen
+    shell: locale-gen {{ locale }}
+
+  - name: Update locale
+    command: /usr/sbin/update-locale LANG={{ locale }} LC_ALL={{ locale }}
+
+  - name: Setup timezone with timedatectl
+    shell: timedatectl set-timezone {{ timezone }}
+
+  tags: always
