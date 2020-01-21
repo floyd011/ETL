@@ -1,0 +1,5 @@
+#-------------------------------------------------------
+# confluent - Docker images
+#-------------------------------------------------------
+pyrdkafka_tmp_folder: "{{ volume_hdd }}/{{ pyrdkafka_tag }}/tmp"
+pyrdkafka_script_folder: "{{ volume_hdd }}/{{ pyrdkafka_tag }}/scripts"

@@ -1,0 +1,72 @@
+version: '2'
+services:
+  consul:
+    image: consul:latest
+    container_name: consul
+    user: "root"
+    command: "agent -server -bootstrap-expect=1 -ui -client=0.0.0.0 -node=consul1 -log-level=warn"
+    volumes:
+      - /consul/data:/consul/data
+    ports:
+      - 8500:8500
+      - 8600:8600/udp
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "tcp://127.0.0.1:12201"
+        tag: "consul-logs"
+    restart: on-failure
+  confluent:
+    image: smartivo.azurecr.io/pyrdkafka:1.0
+    container_name: confluent
+    depends_on:
+      - consul
+    network_mode: host
+    restart: on-failure
+    volumes:
+      - ./bulk.py:/app/index.py
+    environment:
+      - CONSUL_SERVER=127.0.0.1
+      - CONSUL_PORT="8500" 
+      - DBSOURCE="SMARTIVODB2"
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "tcp://127.0.0.1:12201"
+        tag: "confluent-logs"
+  confluent-staging:
+    image: smartivo.azurecr.io/confluent:1.0
+    container_name: confluent-staging
+    depends_on:
+      - consul
+    network_mode: host
+    restart: on-failure
+    volumes:
+      - ./simplestaging.py:/app/index.py
+    environment:
+      - CONSUL_SERVER=127.0.0.1
+      - CONSUL_PORT="8500" 
+      - DBSOURCE="SMARTIVODB2"
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "tcp://127.0.0.1:12201"
+        tag: "confluent-staging-logs"
+  confluent-loop:
+    image: smartivo.azurecr.io/pyrdkafka:1.0
+    container_name: confluent-loop
+    depends_on:
+      - consul
+    network_mode: host
+    restart: on-failure
+    volumes:
+      - ./simplethread.py:/app/index.py
+    environment:
+      - CONSUL_SERVER=127.0.0.1
+      - CONSUL_PORT="8500" 
+      - DBSOURCE="SMARTIVODB2"
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "tcp://127.0.0.1:12201"
+        tag: "confluent-loop-logs"

@@ -1,0 +1,16 @@
+- block:
+  - name: Log into private registry
+    docker_login:
+      registry: "{{ acr_address }}"
+      username: "{{ vault_acr_builder_principal_id }}"
+      password: "{{ vault_acr_builder_principal_pass }}"
+
+  - name: Push images
+    docker_image:
+      name: "{{ item }}"
+      push: yes
+      source: local
+    with_items:
+      - "{{ acr_address }}/{{ docker_pyrdkafka_image }}:{{ pyrdkafka_docker_tag }}"
+
+  tags: always
