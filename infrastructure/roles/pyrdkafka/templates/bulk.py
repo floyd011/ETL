@@ -203,7 +203,7 @@ class readThread (threading.Thread):
                         
                         duration = time.time() - start_time
                         if duration > SAVETIME or retval[3]:
-                            if len(retval[1]) > 0 or len(retval[2]) > 0:
+                            if len(retval[1]) > 1 or len(retval[2]) > 1:
                                 ret = write_database(retval, sql_dict, start_time, self.sdict)
                                 if ret != 0:
                                     PAUSED += self.sdict

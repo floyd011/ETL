@@ -252,6 +252,8 @@ class readThread (threading.Thread):
                                     logging.warning('PAUSED %s Topic: %s - error in data' % (self.getName(), self.sdict))
                                 else:
                                     self.consumer.commit_offsets(retval[0]) 
+                            else:
+                                logging.warning('NO MESSAGES %s Topic: %s ' % (self.getName(), self.sdict))
                             start_time = time.time()
                             retval = [ [],[],[], False, 0,0,0]
                 time.sleep(1)
