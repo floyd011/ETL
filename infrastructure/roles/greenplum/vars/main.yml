@@ -1,6 +1,0 @@
-#-------------------------------------------------------
-# Greenplum - Docker images
-#-------------------------------------------------------
-gp_data_folder: "/containers/{{ deployment_gp }}/data"
-gp_tmp_folder: "{{ volume_hdd }}/{{ deployment_gp }}/tmp"
-gp_script_folder: "{{ volume_hdd }}/{{ deployment_gp }}/scripts"

@@ -1,8 +1,0 @@
-pykafka
-SQLAlchemy
-psycopg2
-GeoAlchemy2
-Shapely
-coloredlogs
-python-consul
-ujson

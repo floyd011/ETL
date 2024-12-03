@@ -1,8 +1,0 @@
-path = /usr/local/greenplum-db-6.2.1
-display_name = Greenplum Database Production Cluster
-master_port = 5434
-webserver_port = 28081
-EnableHTTP = true      ; allow both HTTP and HTTPS
-EnableHTTPS = true
-ssl_cert_file = /etc/ssl/cert.pem
-enable_kerberos = false

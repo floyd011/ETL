@@ -1,8 +1,0 @@
-#-------------------------------------------------------
-# zoo - Docker images
-#-------------------------------------------------------
-zoo_data_folder: "/containers/{{ zoo_tag }}/data"
-zoo_conf_folder: "/containers/{{ zoo_tag }}/conf"
-zoo_logs_folder: "/containers/{{ zoo_tag }}/logs"
-zoo_tmp_folder: "{{ volume_hdd }}/{{ zoo_tag }}/tmp"
-zoo_script_folder: "{{ volume_hdd }}/{{ zoo_tag }}/scripts"

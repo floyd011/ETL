@@ -1,9 +1,0 @@
-{
-  "name": "Dashboard Access",
-  "description": "Dashboard Access",
-  "permissions": [
-    "dashboards:*",
-    "dashboards:create:*"
-  ],
-  "read_only": false
-}
